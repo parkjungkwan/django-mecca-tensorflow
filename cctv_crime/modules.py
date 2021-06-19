@@ -61,13 +61,13 @@ class Reader(ReaderBase):
         return file.context + file.fname
 
     def csv(self, file) -> object:
-        return pd.read_csv(f'{self.new_file((file))}.csv', encoding='UTF-8', thousands=',')
+        return pd.read_csv(f'{self.new_file(file)}.csv', encoding='UTF-8', thousands=',')
 
     def xls(self, file, header, usecols) -> object:
-        return pd.read_excel(f'{self.new_file((file))}.xls', header=header, usecols=usecols)
+        return pd.read_excel(f'{self.new_file(file)}.xls', header=header, usecols=usecols)
 
     def json(self, file) -> object:
-        return json.load(open(f'{self.new_file((file))}.json'), encoding='UTF-8')
+        return json.load(open(f'{self.new_file(file)}.json', encoding='UTF-8'))
 
     def gmaps(self) -> object:
         return googlemaps.Client(key='')
@@ -301,7 +301,6 @@ class Service(Reader):
     def draw_crime_map(self):
         file = self.file
         reader = self.reader
-        printer = self.printer
         file.context = './saved_data/'
         file.fname = 'police_norm'
         police_norm = reader.csv(file)
@@ -327,26 +326,27 @@ class Service(Reader):
             station_lats.append(t_loc['location']['lat'])
             station_lngs.append(t_loc['location']['lng'])
 
+        police_pos['lat'] = station_lats
+        police_pos['lng'] = station_lngs
+        col = ['살인 검거', '강도 검거', '강간 검거', '절도 검거', '폭력 검거']
+        tmp = police_pos[col] / police_pos[col].max()
+        police_pos['검거'] = np.sum(tmp, axis=1)
 
-
-        state_geo = None
-        state_data = None
-
-        m = folium.Map(location=[48, -102], zoom_start=3)
+        folium_map = folium.Map(location=[37.5502, 126.982], zoom_start=12, title='Stamen Toner')
 
         folium.Choropleth(
             geo_data=state_geo,
-            data=state_data,
-            columns=["State", "Unemployment"],
+            data=tuple(zip(police_norm['구별'],police_norm['범죄'])),
+            columns=["State", "Crime Rate"],
             key_on="feature.id",
-            fill_color="BuPu",
+            fill_color="PuRd",
             fill_opacity=0.7,
-            line_opacity=0.5,
-            legend_name="Unemployment Rate (%)",
+            line_opacity=0.2,
+            legend_name="Crime Rate (%)",
             reset=True,
-        ).add_to(m)
+        ).add_to(folium_map)
 
-        m.save('./saved_data/Unemployment.html')
+        folium_map.save('./saved_data/crime_map.html')
 
 
 if __name__ == '__main__':
@@ -355,7 +355,8 @@ if __name__ == '__main__':
     # s.save_police_pos()
     # s.save_cctv_pop()
     # s.save_police_norm()
-    s.folium_test()
+    # s.folium_test()
+    s.draw_crime_map()
 
 
 
