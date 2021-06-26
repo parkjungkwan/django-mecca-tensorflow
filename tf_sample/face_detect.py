@@ -1,7 +1,7 @@
 import cv2
 
 class FaceDetect(object):
-    
+
     cascade = './data/haarcascade_frontalface_alt.xml'
     girl = './data/girl.jpg'
 
